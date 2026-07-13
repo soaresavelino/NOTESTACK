@@ -51,12 +51,16 @@ function filterNotesByCategory(category) {
     if (category === "all") {
         renderNotes(searchInput.value);
     } else {
+        // SOLUÇÃO CODE SMELL 2: Substituição da checagem manual antiga com o operador '&&'
+        // pelo operador moderno de ponto de interrogação e ponto (Optional Chaining - ?.).
+        // Isso evita que o código quebre caso 'labels' venha vazio ou nulo, deixando a linha limpa e curta.
         const filtered = notes.filter(note =>
-            (note.labels && note.labels.includes(category)) ||
-            (note.folder === category)
+            note.labels?.includes(category) || (note.folder === category)
         );
 
+
         // Create a temporary filtered display
+    
         notesGrid.innerHTML = "";
 
         if (filtered.length === 0) {
@@ -165,6 +169,7 @@ function renderNotes(filter = "") {
         return;
     }
 
+    //code smell 2
     notesGrid.innerHTML = "";
 
     let filteredNotes = notes;
@@ -354,16 +359,14 @@ function restoreNote(index) {
     saveNotes();
     saveTrash();
 
-    // If we're in trash view, stay in trash view
+    // SOLUÇÃO CODE SMELL 1: Juntamos o 'else' com o 'if' de baixo.
+    // Isso eliminou chaves desnecessárias, deixando o código em linha reta e mais legível.
     if (document.getElementById("trashView").style.display === "block") {
         renderTrash();
+    } else if (currentFilter !== "all") {
+        filterNotesByCategory(currentFilter);
     } else {
-        // Otherwise update notes view based on current filter
-        if (currentFilter !== "all") {
-            filterNotesByCategory(currentFilter);
-        } else {
-            renderNotes(searchInput.value);
-        }
+        renderNotes(searchInput.value);
     }
 }
 function permanentlyDelete(index) {
@@ -588,12 +591,15 @@ document.addEventListener("keydown", (e) => {
         document.getElementById("navTrash").click();
         return;
     }
-
+// code smell 3
     // ESC → Clear search
     if (e.key === "Escape") {
         searchInput.value = "";
         renderNotes();
-        return;
+        
+        // SOLUÇÃO CODE SMELL 3: Removido o 'return;' redundante (Redundant Jump).
+        // Como esta condição é o fim do bloco do 'if' e não há código executado depois
+        // dentro desta lógica, a função já encerra naturalmente sem precisar de "código morto".
     }
 
 });
