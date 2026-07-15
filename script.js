@@ -154,7 +154,7 @@ function filterNotesByCategory(category) {
 }
 
 function saveNotes() {
-    localStorage.setItem("notestackNotes", JSON.stringify(notes));
+    localStorage.setItem("ultimateNotes", JSON.stringify(notes));
 }
 
 // Migrate old notes to new format
