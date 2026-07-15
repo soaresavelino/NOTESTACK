@@ -20,18 +20,18 @@ let notes = JSON.parse(localStorage.getItem("ultimateNotes")) || [];
 let folders = JSON.parse(localStorage.getItem("noteFolders")) || [];
 let currentFilter = "all"; // Track current category/folder filter
 
-function getNoteTimestamp(note) {
-    const date = note.updatedAt || note.createdAt;
-    const timestamp = date ? new Date(date).getTime() : 0;
-
-    return Number.isNaN(timestamp) ? 0 : timestamp;
-}
-
 function sortNotesByModificationDate(notesList) {
-    return [...notesList].sort(
-        (noteA, noteB) =>
-            getNoteTimestamp(noteB) - getNoteTimestamp(noteA)
-    );
+    return [...notesList].sort((noteA, noteB) => {
+        const dateA = new Date(
+            noteA.updatedAt || noteA.createdAt || 0
+        ).getTime();
+
+        const dateB = new Date(
+            noteB.updatedAt || noteB.createdAt || 0
+        ).getTime();
+
+        return dateB - dateA;
+    });
 }
 
 function showEmptyState(container, message) {
@@ -54,11 +54,13 @@ function showEmptyState(container, message) {
 
 function getSelectedLabels() {
     const selected = [];
+
     labelCheckboxes.forEach(checkbox => {
         if (checkbox.checked) {
             selected.push(checkbox.value);
         }
     });
+
     return selected;
 }
 
@@ -68,11 +70,9 @@ function filterNotesByCategory(category) {
     if (category === "all") {
         renderNotes(searchInput.value);
     } else {
-        const filtered = sortNotesByModificationDate(
-            notes.filter(note =>
-                (note.labels && note.labels.includes(category)) ||
-                (note.folder === category)
-            )
+        const filtered = sortNotesByModificationDate(notes).filter(note =>
+            (note.labels && note.labels.includes(category)) ||
+            (note.folder === category)
         );
 
         // Create a temporary filtered display
@@ -141,10 +141,12 @@ function filterNotesByCategory(category) {
 
     // Check if it's a built-in category or a custom folder
     const builtInNav = document.getElementById(`nav${category}`);
+
     if (builtInNav) {
         builtInNav.classList.add("active");
     } else {
         const customNavs = document.querySelectorAll(".custom-folder-item");
+
         customNavs.forEach(nav => {
             if (nav.dataset.folder === category) {
                 nav.classList.add("active");
@@ -154,7 +156,7 @@ function filterNotesByCategory(category) {
 }
 
 function saveNotes() {
-    localStorage.setItem("ultimateNotes", JSON.stringify(notes));
+    localStorage.setItem("notestackNotes", JSON.stringify(notes));
 }
 
 // Migrate old notes to new format
@@ -284,6 +286,7 @@ function renderNotes(filter = "") {
 
 function addNote() {
     const text = noteInput.value.trim();
+
     if (!text) return;
 
     const selectedLabels = getSelectedLabels();
@@ -301,6 +304,7 @@ function addNote() {
 
     noteInput.value = "";
     folderSelect.value = "";
+
     labelCheckboxes.forEach(cb => cb.checked = false);
 
     saveNotes();
@@ -311,6 +315,7 @@ function deleteNote(index) {
     // Store the entire note object, not just the text
     trash.push(notes[index]);
     notes.splice(index, 1);
+
     saveNotes();
     saveTrash();
 
@@ -339,14 +344,12 @@ addNoteBtn.addEventListener("click", addNote);
 searchInput.addEventListener("input", () => {
     if (currentFilter !== "all") {
         // If in category view, search within that category
-        const filtered = sortNotesByModificationDate(
-            notes.filter(note =>
-                note.labels &&
-                note.labels.includes(currentFilter) &&
-                note.text
-                    .toLowerCase()
-                    .includes(searchInput.value.toLowerCase())
-            )
+        const filtered = sortNotesByModificationDate(notes).filter(note =>
+            note.labels &&
+            note.labels.includes(currentFilter) &&
+            note.text
+                .toLowerCase()
+                .includes(searchInput.value.toLowerCase())
         );
 
         notesGrid.innerHTML = "";
@@ -372,9 +375,7 @@ searchInput.addEventListener("input", () => {
 
                 note.labels.forEach(label => {
                     const labelSpan = document.createElement("span");
-                    labelSpan.className =
-                        `note-label ${label.toLowerCase()}`;
-
+                    labelSpan.className = `note-label ${label.toLowerCase()}`;
                     labelSpan.textContent = label;
                     labelsDiv.appendChild(labelSpan);
                 });
@@ -414,6 +415,7 @@ searchInput.addEventListener("input", () => {
 function restoreNote(index) {
     notes.push(trash[index]);
     trash.splice(index, 1);
+
     saveNotes();
     saveTrash();
 
@@ -436,6 +438,7 @@ function permanentlyDelete(index) {
     }
 
     trash.splice(index, 1);
+
     saveTrash();
     renderTrash();
 }
@@ -455,7 +458,10 @@ function renderTrash() {
         card.className = "note-card";
 
         // Handle both old string format and new object format
-        const noteText = typeof note === "string" ? note : note.text;
+        const noteText =
+            typeof note === "string"
+                ? note
+                : note.text;
 
         const noteLabels =
             typeof note === "object" && note.labels
@@ -511,7 +517,8 @@ if (localStorage.getItem("theme") === "dark") {
 darkModeBtn.addEventListener("click", () => {
     document.body.classList.toggle("dark-mode");
 
-    const isDark = document.body.classList.contains("dark-mode");
+    const isDark =
+        document.body.classList.contains("dark-mode");
 
     localStorage.setItem(
         "theme",
@@ -519,7 +526,9 @@ darkModeBtn.addEventListener("click", () => {
     );
 
     darkModeBtn.textContent =
-        isDark ? "☀️ Light Mode" : "🌙 Dark Mode";
+        isDark
+            ? "☀️ Light Mode"
+            : "🌙 Dark Mode";
 });
 
 renderNotes();
@@ -610,6 +619,7 @@ function renderFolders() {
         const option = document.createElement("option");
         option.value = folder;
         option.textContent = folder;
+
         folderSelect.appendChild(option);
     });
 }
@@ -625,6 +635,7 @@ closeFolderModal.addEventListener("click", () => {
 
 createFolderBtn.addEventListener("click", () => {
     const name = folderNameInput.value.trim();
+
     if (!name) return;
 
     if (folders.includes(name)) {
@@ -633,6 +644,7 @@ createFolderBtn.addEventListener("click", () => {
     }
 
     folders.push(name);
+
     saveFolders();
     renderFolders();
 
