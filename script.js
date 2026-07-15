@@ -20,29 +20,18 @@ let notes = JSON.parse(localStorage.getItem("ultimateNotes")) || [];
 let folders = JSON.parse(localStorage.getItem("noteFolders")) || [];
 let currentFilter = "all"; // Track current category/folder filter
 
+function getNoteTimestamp(note) {
+    const date = note.updatedAt || note.createdAt;
+    const timestamp = date ? new Date(date).getTime() : 0;
+
+    return Number.isNaN(timestamp) ? 0 : timestamp;
+}
+
 function sortNotesByModificationDate(notesList) {
-    return [...notesList].sort((noteA, noteB) => {
-        const dateA = noteA.updatedAt || noteA.createdAt;
-        const dateB = noteB.updatedAt || noteB.createdAt;
-
-        const timestampA = dateA
-            ? new Date(dateA).getTime()
-            : 0;
-
-        const timestampB = dateB
-            ? new Date(dateB).getTime()
-            : 0;
-
-        const validTimestampA = Number.isNaN(timestampA)
-            ? 0
-            : timestampA;
-
-        const validTimestampB = Number.isNaN(timestampB)
-            ? 0
-            : timestampB;
-
-        return validTimestampB - validTimestampA;
-    });
+    return [...notesList].sort(
+        (noteA, noteB) =>
+            getNoteTimestamp(noteB) - getNoteTimestamp(noteA)
+    );
 }
 
 function showEmptyState(container, message) {
@@ -65,13 +54,11 @@ function showEmptyState(container, message) {
 
 function getSelectedLabels() {
     const selected = [];
-
     labelCheckboxes.forEach(checkbox => {
         if (checkbox.checked) {
             selected.push(checkbox.value);
         }
     });
-
     return selected;
 }
 
@@ -84,7 +71,7 @@ function filterNotesByCategory(category) {
         const filtered = sortNotesByModificationDate(
             notes.filter(note =>
                 (note.labels && note.labels.includes(category)) ||
-                note.folder === category
+                (note.folder === category)
             )
         );
 
@@ -113,8 +100,7 @@ function filterNotesByCategory(category) {
 
                 note.labels.forEach(label => {
                     const labelSpan = document.createElement("span");
-                    labelSpan.className =
-                        `note-label ${label.toLowerCase()}`;
+                    labelSpan.className = `note-label ${label.toLowerCase()}`;
                     labelSpan.textContent = label;
                     labelsDiv.appendChild(labelSpan);
                 });
@@ -155,13 +141,10 @@ function filterNotesByCategory(category) {
 
     // Check if it's a built-in category or a custom folder
     const builtInNav = document.getElementById(`nav${category}`);
-
     if (builtInNav) {
         builtInNav.classList.add("active");
     } else {
-        const customNavs =
-            document.querySelectorAll(".custom-folder-item");
-
+        const customNavs = document.querySelectorAll(".custom-folder-item");
         customNavs.forEach(nav => {
             if (nav.dataset.folder === category) {
                 nav.classList.add("active");
@@ -195,12 +178,7 @@ notes = notes.map(note => {
     }
 
     if (!note.createdAt) {
-        const noteId = Number(note.id);
-
-        note.createdAt =
-            Number.isFinite(noteId) && noteId > 0
-                ? new Date(noteId).toISOString()
-                : currentDate;
+        note.createdAt = currentDate;
     }
 
     if (!note.updatedAt) {
@@ -232,23 +210,17 @@ function renderNotes(filter = "") {
     let filteredNotes = sortNotesByModificationDate(notes);
 
     if (filter.startsWith("#")) {
-        const labelFilter = filter
-            .substring(1)
-            .toLowerCase();
+        const labelFilter = filter.substring(1).toLowerCase();
 
         filteredNotes = filteredNotes.filter(note =>
             note.labels &&
             note.labels.some(label =>
-                label
-                    .toLowerCase()
-                    .includes(labelFilter)
+                label.toLowerCase().includes(labelFilter)
             )
         );
     } else {
         filteredNotes = filteredNotes.filter(note =>
-            note.text
-                .toLowerCase()
-                .includes(filter.toLowerCase())
+            note.text.toLowerCase().includes(filter.toLowerCase())
         );
     }
 
@@ -276,8 +248,7 @@ function renderNotes(filter = "") {
 
             note.labels.forEach(label => {
                 const labelSpan = document.createElement("span");
-                labelSpan.className =
-                    `note-label ${label.toLowerCase()}`;
+                labelSpan.className = `note-label ${label.toLowerCase()}`;
                 labelSpan.textContent = label;
                 labelsDiv.appendChild(labelSpan);
             });
@@ -313,10 +284,7 @@ function renderNotes(filter = "") {
 
 function addNote() {
     const text = noteInput.value.trim();
-
-    if (!text) {
-        return;
-    }
+    if (!text) return;
 
     const selectedLabels = getSelectedLabels();
     const selectedFolder = folderSelect.value;
@@ -333,10 +301,7 @@ function addNote() {
 
     noteInput.value = "";
     folderSelect.value = "";
-
-    labelCheckboxes.forEach(cb => {
-        cb.checked = false;
-    });
+    labelCheckboxes.forEach(cb => cb.checked = false);
 
     saveNotes();
     renderNotes(searchInput.value);
@@ -346,7 +311,6 @@ function deleteNote(index) {
     // Store the entire note object, not just the text
     trash.push(notes[index]);
     notes.splice(index, 1);
-
     saveNotes();
     saveTrash();
 
@@ -359,10 +323,7 @@ function deleteNote(index) {
 }
 
 function editNote(index) {
-    const updated = prompt(
-        "Edit note:",
-        notes[index].text
-    );
+    const updated = prompt("Edit note:", notes[index].text);
 
     if (updated !== null && updated.trim() !== "") {
         notes[index].text = updated.trim();
@@ -391,37 +352,26 @@ searchInput.addEventListener("input", () => {
         notesGrid.innerHTML = "";
 
         if (filtered.length === 0) {
-            notesGrid.innerHTML = `
-                <p style="text-align:center; margin-top:20px; color:#777;">
-                    No ${currentFilter} notes found matching
-                    "${searchInput.value}"
-                </p>
-            `;
+            notesGrid.innerHTML = `<p style="text-align:center; margin-top:20px; color:#777;">
+                No ${currentFilter} notes found matching "${searchInput.value}"
+            </p>`;
             return;
         }
 
         filtered.forEach((note, index) => {
-            const originalIndex =
-                notes.findIndex(n => n.id === note.id);
+            const originalIndex = notes.findIndex(n => n.id === note.id);
 
             const card = document.createElement("div");
             card.className = "note-card";
 
             if (note.labels && note.labels.length > 0) {
-                card.setAttribute(
-                    "data-labels",
-                    note.labels.join(" ")
-                );
+                card.setAttribute("data-labels", note.labels.join(" "));
 
-                const labelsDiv =
-                    document.createElement("div");
-
+                const labelsDiv = document.createElement("div");
                 labelsDiv.className = "note-labels";
 
                 note.labels.forEach(label => {
-                    const labelSpan =
-                        document.createElement("span");
-
+                    const labelSpan = document.createElement("span");
                     labelSpan.className =
                         `note-label ${label.toLowerCase()}`;
 
@@ -446,8 +396,7 @@ searchInput.addEventListener("input", () => {
             const deleteBtn = document.createElement("button");
             deleteBtn.textContent = "Delete";
             deleteBtn.className = "delete-btn";
-            deleteBtn.onclick =
-                () => deleteNote(originalIndex);
+            deleteBtn.onclick = () => deleteNote(originalIndex);
 
             actions.appendChild(editBtn);
             actions.appendChild(deleteBtn);
@@ -465,15 +414,11 @@ searchInput.addEventListener("input", () => {
 function restoreNote(index) {
     notes.push(trash[index]);
     trash.splice(index, 1);
-
     saveNotes();
     saveTrash();
 
     // If we're in trash view, stay in trash view
-    if (
-        document.getElementById("trashView").style.display ===
-        "block"
-    ) {
+    if (document.getElementById("trashView").style.display === "block") {
         renderTrash();
     } else {
         // Otherwise update notes view based on current filter
@@ -486,33 +431,22 @@ function restoreNote(index) {
 }
 
 function permanentlyDelete(index) {
-    if (
-        !confirm(
-            "Permanently delete this note? This cannot be undone."
-        )
-    ) {
+    if (!confirm("Permanently delete this note? This cannot be undone.")) {
         return;
     }
 
     trash.splice(index, 1);
-
     saveTrash();
     renderTrash();
 }
 
 function renderTrash() {
-    if (!trashGrid) {
-        return;
-    }
+    if (!trashGrid) return;
 
     trashGrid.innerHTML = "";
 
     if (trash.length === 0) {
-        trashGrid.innerHTML = `
-            <p style="text-align:center; margin-top:20px; color:#777;">
-                Trash is empty
-            </p>
-        `;
+        trashGrid.innerHTML = `<p style="text-align:center; margin-top:20px; color:#777;">Trash is empty</p>`;
         return;
     }
 
@@ -521,10 +455,7 @@ function renderTrash() {
         card.className = "note-card";
 
         // Handle both old string format and new object format
-        const noteText =
-            typeof note === "string"
-                ? note
-                : note.text;
+        const noteText = typeof note === "string" ? note : note.text;
 
         const noteLabels =
             typeof note === "object" && note.labels
@@ -533,18 +464,12 @@ function renderTrash() {
 
         // Show labels if they exist
         if (noteLabels.length > 0) {
-            const labelsDiv =
-                document.createElement("div");
-
+            const labelsDiv = document.createElement("div");
             labelsDiv.className = "note-labels";
 
             noteLabels.forEach(label => {
-                const labelSpan =
-                    document.createElement("span");
-
-                labelSpan.className =
-                    `note-label ${label.toLowerCase()}`;
-
+                const labelSpan = document.createElement("span");
+                labelSpan.className = `note-label ${label.toLowerCase()}`;
                 labelSpan.textContent = label;
                 labelsDiv.appendChild(labelSpan);
             });
@@ -563,13 +488,10 @@ function renderTrash() {
         restoreBtn.className = "edit-btn";
         restoreBtn.onclick = () => restoreNote(index);
 
-        const permDeleteBtn =
-            document.createElement("button");
-
+        const permDeleteBtn = document.createElement("button");
         permDeleteBtn.textContent = "Delete Forever";
         permDeleteBtn.className = "delete-btn";
-        permDeleteBtn.onclick =
-            () => permanentlyDelete(index);
+        permDeleteBtn.onclick = () => permanentlyDelete(index);
 
         actions.appendChild(restoreBtn);
         actions.appendChild(permDeleteBtn);
@@ -589,8 +511,7 @@ if (localStorage.getItem("theme") === "dark") {
 darkModeBtn.addEventListener("click", () => {
     document.body.classList.toggle("dark-mode");
 
-    const isDark =
-        document.body.classList.contains("dark-mode");
+    const isDark = document.body.classList.contains("dark-mode");
 
     localStorage.setItem(
         "theme",
@@ -598,192 +519,88 @@ darkModeBtn.addEventListener("click", () => {
     );
 
     darkModeBtn.textContent =
-        isDark
-            ? "☀️ Light Mode"
-            : "🌙 Dark Mode";
+        isDark ? "☀️ Light Mode" : "🌙 Dark Mode";
 });
 
 renderNotes();
 renderTrash();
 
 // Sidebar navigation
-document
-    .getElementById("navNotes")
-    .addEventListener("click", () => {
-        document.getElementById(
-            "notesView"
-        ).style.display = "block";
+document.getElementById("navNotes").addEventListener("click", () => {
+    document.getElementById("notesView").style.display = "block";
+    document.getElementById("trashView").style.display = "none";
+    document.getElementById("navNotes").classList.add("active");
+    document.getElementById("navTrash").classList.remove("active");
+});
 
-        document.getElementById(
-            "trashView"
-        ).style.display = "none";
-
-        document
-            .getElementById("navNotes")
-            .classList.add("active");
-
-        document
-            .getElementById("navTrash")
-            .classList.remove("active");
-    });
-
-document
-    .getElementById("navTrash")
-    .addEventListener("click", () => {
-        document.getElementById(
-            "notesView"
-        ).style.display = "none";
-
-        document.getElementById(
-            "trashView"
-        ).style.display = "block";
-
-        document
-            .getElementById("navTrash")
-            .classList.add("active");
-
-        document
-            .getElementById("navNotes")
-            .classList.remove("active");
-
-        renderTrash();
-    });
+document.getElementById("navTrash").addEventListener("click", () => {
+    document.getElementById("notesView").style.display = "none";
+    document.getElementById("trashView").style.display = "block";
+    document.getElementById("navTrash").classList.add("active");
+    document.getElementById("navNotes").classList.remove("active");
+    renderTrash();
+});
 
 // Category filter event listeners
-document
-    .getElementById("navImportant")
-    .addEventListener("click", () => {
-        document.getElementById(
-            "notesView"
-        ).style.display = "block";
+document.getElementById("navImportant").addEventListener("click", () => {
+    document.getElementById("notesView").style.display = "block";
+    document.getElementById("trashView").style.display = "none";
+    filterNotesByCategory("Important");
+});
 
-        document.getElementById(
-            "trashView"
-        ).style.display = "none";
+document.getElementById("navWork").addEventListener("click", () => {
+    document.getElementById("notesView").style.display = "block";
+    document.getElementById("trashView").style.display = "none";
+    filterNotesByCategory("Work");
+});
 
-        filterNotesByCategory("Important");
-    });
+document.getElementById("navPersonal").addEventListener("click", () => {
+    document.getElementById("notesView").style.display = "block";
+    document.getElementById("trashView").style.display = "none";
+    filterNotesByCategory("Personal");
+});
 
-document
-    .getElementById("navWork")
-    .addEventListener("click", () => {
-        document.getElementById(
-            "notesView"
-        ).style.display = "block";
-
-        document.getElementById(
-            "trashView"
-        ).style.display = "none";
-
-        filterNotesByCategory("Work");
-    });
-
-document
-    .getElementById("navPersonal")
-    .addEventListener("click", () => {
-        document.getElementById(
-            "notesView"
-        ).style.display = "block";
-
-        document.getElementById(
-            "trashView"
-        ).style.display = "none";
-
-        filterNotesByCategory("Personal");
-    });
-
-document
-    .getElementById("navIdeas")
-    .addEventListener("click", () => {
-        document.getElementById(
-            "notesView"
-        ).style.display = "block";
-
-        document.getElementById(
-            "trashView"
-        ).style.display = "none";
-
-        filterNotesByCategory("Ideas");
-    });
+document.getElementById("navIdeas").addEventListener("click", () => {
+    document.getElementById("notesView").style.display = "block";
+    document.getElementById("trashView").style.display = "none";
+    filterNotesByCategory("Ideas");
+});
 
 // Update existing All Notes navigation
-document
-    .getElementById("navNotes")
-    .addEventListener("click", () => {
-        document.getElementById(
-            "notesView"
-        ).style.display = "block";
-
-        document.getElementById(
-            "trashView"
-        ).style.display = "none";
-
-        filterNotesByCategory("all");
-    });
+document.getElementById("navNotes").addEventListener("click", () => {
+    document.getElementById("notesView").style.display = "block";
+    document.getElementById("trashView").style.display = "none";
+    filterNotesByCategory("all");
+});
 
 // Update Trash navigation
-document
-    .getElementById("navTrash")
-    .addEventListener("click", () => {
-        document.getElementById(
-            "notesView"
-        ).style.display = "none";
-
-        document.getElementById(
-            "trashView"
-        ).style.display = "block";
-
-        document
-            .getElementById("navTrash")
-            .classList.add("active");
-
-        document
-            .getElementById("navNotes")
-            .classList.remove("active");
-
-        document
-            .getElementById("navImportant")
-            .classList.remove("active");
-
-        document
-            .getElementById("navWork")
-            .classList.remove("active");
-
-        document
-            .getElementById("navPersonal")
-            .classList.remove("active");
-
-        document
-            .getElementById("navIdeas")
-            .classList.remove("active");
-
-        renderTrash();
-    });
+document.getElementById("navTrash").addEventListener("click", () => {
+    document.getElementById("notesView").style.display = "none";
+    document.getElementById("trashView").style.display = "block";
+    document.getElementById("navTrash").classList.add("active");
+    document.getElementById("navNotes").classList.remove("active");
+    document.getElementById("navImportant").classList.remove("active");
+    document.getElementById("navWork").classList.remove("active");
+    document.getElementById("navPersonal").classList.remove("active");
+    document.getElementById("navIdeas").classList.remove("active");
+    renderTrash();
+});
 
 // --- Folder Management ---
 function renderFolders() {
     customFoldersList.innerHTML = "";
-
-    folderSelect.innerHTML =
-        '<option value="">No Folder</option>';
+    folderSelect.innerHTML = '<option value="">No Folder</option>';
 
     folders.forEach(folder => {
         // Sidebar list item
         const li = document.createElement("li");
-
         li.className = "custom-folder-item";
         li.dataset.folder = folder;
         li.innerHTML = `📁 ${folder}`;
 
         li.addEventListener("click", () => {
-            document.getElementById(
-                "notesView"
-            ).style.display = "block";
-
-            document.getElementById(
-                "trashView"
-            ).style.display = "none";
-
+            document.getElementById("notesView").style.display = "block";
+            document.getElementById("trashView").style.display = "none";
             filterNotesByCategory(folder);
         });
 
@@ -791,10 +608,8 @@ function renderFolders() {
 
         // Select dropdown option
         const option = document.createElement("option");
-
         option.value = folder;
         option.textContent = folder;
-
         folderSelect.appendChild(option);
     });
 }
@@ -810,10 +625,7 @@ closeFolderModal.addEventListener("click", () => {
 
 createFolderBtn.addEventListener("click", () => {
     const name = folderNameInput.value.trim();
-
-    if (!name) {
-        return;
-    }
+    if (!name) return;
 
     if (folders.includes(name)) {
         alert("A folder with this name already exists.");
@@ -821,7 +633,6 @@ createFolderBtn.addEventListener("click", () => {
     }
 
     folders.push(name);
-
     saveFolders();
     renderFolders();
 
@@ -835,46 +646,30 @@ createFolderBtn.addEventListener("click", () => {
 
 document.addEventListener("keydown", e => {
     // ALT + N → Focus new note
-    if (
-        e.altKey &&
-        e.key.toLowerCase() === "n"
-    ) {
+    if (e.altKey && e.key.toLowerCase() === "n") {
         e.preventDefault();
         noteInput.focus();
         return;
     }
 
     // ALT + S → Focus search
-    if (
-        e.altKey &&
-        e.key.toLowerCase() === "s"
-    ) {
+    if (e.altKey && e.key.toLowerCase() === "s") {
         e.preventDefault();
         searchInput.focus();
         return;
     }
 
     // ALT + D → Toggle dark mode
-    if (
-        e.altKey &&
-        e.key.toLowerCase() === "d"
-    ) {
+    if (e.altKey && e.key.toLowerCase() === "d") {
         e.preventDefault();
         darkModeBtn.click();
         return;
     }
 
     // ALT + T → Open Trash
-    if (
-        e.altKey &&
-        e.key.toLowerCase() === "t"
-    ) {
+    if (e.altKey && e.key.toLowerCase() === "t") {
         e.preventDefault();
-
-        document
-            .getElementById("navTrash")
-            .click();
-
+        document.getElementById("navTrash").click();
         return;
     }
 
