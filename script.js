@@ -20,18 +20,23 @@ let notes = JSON.parse(localStorage.getItem("ultimateNotes")) || [];
 let folders = JSON.parse(localStorage.getItem("noteFolders")) || [];
 let currentFilter = "all"; // Track current category/folder filter
 
+function getNoteTimestamp(note) {
+    const noteDate = note.updatedAt || note.createdAt;
+
+    if (!noteDate) {
+        return 0;
+    }
+
+    const timestamp = new Date(noteDate).getTime();
+
+    return Number.isNaN(timestamp) ? 0 : timestamp;
+}
+
 function sortNotesByModificationDate(notesList) {
-    return [...notesList].sort((noteA, noteB) => {
-        const dateA = new Date(
-            noteA.updatedAt || noteA.createdAt || 0
-        ).getTime();
-
-        const dateB = new Date(
-            noteB.updatedAt || noteB.createdAt || 0
-        ).getTime();
-
-        return dateB - dateA;
-    });
+    return [...notesList].sort(
+        (noteA, noteB) =>
+            getNoteTimestamp(noteB) - getNoteTimestamp(noteA)
+    );
 }
 
 function showEmptyState(container, message) {
@@ -45,6 +50,7 @@ function showEmptyState(container, message) {
     `;
 
     const btn = document.getElementById("emptyAddBtn");
+
     if (btn) {
         btn.addEventListener("click", () => {
             noteInput.focus();
@@ -62,6 +68,52 @@ function getSelectedLabels() {
     });
 
     return selected;
+}
+
+function createNoteCard(note, originalIndex) {
+    const card = document.createElement("div");
+    card.className = "note-card";
+
+    if (note.labels?.length) {
+        card.dataset.labels = note.labels.join(" ");
+
+        const labelsDiv = document.createElement("div");
+        labelsDiv.className = "note-labels";
+
+        note.labels.forEach(label => {
+            const labelSpan = document.createElement("span");
+            labelSpan.className = `note-label ${label.toLowerCase()}`;
+            labelSpan.textContent = label;
+
+            labelsDiv.appendChild(labelSpan);
+        });
+
+        card.appendChild(labelsDiv);
+    }
+
+    const content = document.createElement("p");
+    content.textContent = note.text;
+
+    const actions = document.createElement("div");
+    actions.className = "card-actions";
+
+    const editBtn = document.createElement("button");
+    editBtn.textContent = "Edit";
+    editBtn.className = "edit-btn";
+    editBtn.onclick = () => editNote(originalIndex);
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.textContent = "Delete";
+    deleteBtn.className = "delete-btn";
+    deleteBtn.onclick = () => deleteNote(originalIndex);
+
+    actions.appendChild(editBtn);
+    actions.appendChild(deleteBtn);
+
+    card.appendChild(content);
+    card.appendChild(actions);
+
+    return card;
 }
 
 function filterNotesByCategory(category) {
@@ -88,51 +140,14 @@ function filterNotesByCategory(category) {
             return;
         }
 
-        filtered.forEach((note, index) => {
-            const originalIndex = notes.findIndex(n => n.id === note.id);
+        filtered.forEach(note => {
+            const originalIndex = notes.findIndex(
+                item => item.id === note.id
+            );
 
-            const card = document.createElement("div");
-            card.className = "note-card";
-
-            if (note.labels && note.labels.length > 0) {
-                card.setAttribute("data-labels", note.labels.join(" "));
-
-                const labelsDiv = document.createElement("div");
-                labelsDiv.className = "note-labels";
-
-                note.labels.forEach(label => {
-                    const labelSpan = document.createElement("span");
-                    labelSpan.className = `note-label ${label.toLowerCase()}`;
-                    labelSpan.textContent = label;
-                    labelsDiv.appendChild(labelSpan);
-                });
-
-                card.appendChild(labelsDiv);
-            }
-
-            const content = document.createElement("p");
-            content.textContent = note.text;
-
-            const actions = document.createElement("div");
-            actions.className = "card-actions";
-
-            const editBtn = document.createElement("button");
-            editBtn.textContent = "Edit";
-            editBtn.className = "edit-btn";
-            editBtn.onclick = () => editNote(originalIndex);
-
-            const deleteBtn = document.createElement("button");
-            deleteBtn.textContent = "Delete";
-            deleteBtn.className = "delete-btn";
-            deleteBtn.onclick = () => deleteNote(originalIndex);
-
-            actions.appendChild(editBtn);
-            actions.appendChild(deleteBtn);
-
-            card.appendChild(content);
-            card.appendChild(actions);
-
-            notesGrid.appendChild(card);
+            notesGrid.appendChild(
+                createNoteCard(note, originalIndex)
+            );
         });
     }
 
@@ -229,11 +244,15 @@ function renderNotes(filter = "") {
     let filteredNotes = sortNotesByModificationDate(notes);
 
     if (filter.startsWith("#")) {
-        const labelFilter = filter.substring(1).toLowerCase();
+        const labelFilter = filter
+            .substring(1)
+            .toLowerCase();
 
         filteredNotes = filteredNotes.filter(note =>
             note.labels?.some(label =>
-                label.toLowerCase().includes(labelFilter)
+                label
+                    .toLowerCase()
+                    .includes(labelFilter)
             )
         );
     } else {
@@ -255,66 +274,23 @@ function renderNotes(filter = "") {
         return;
     }
 
-    filteredNotes.forEach((note, index) => {
+    filteredNotes.forEach(note => {
         const originalIndex = notes.findIndex(
-            n => n.text === note.text && n.id === note.id
+            item => item.id === note.id
         );
 
-        const card = document.createElement("div");
-        card.className = "note-card";
-
-        if (note.labels && note.labels.length > 0) {
-            card.setAttribute(
-                "data-labels",
-                note.labels.join(" ")
-            );
-
-            const labelsDiv = document.createElement("div");
-            labelsDiv.className = "note-labels";
-
-            note.labels.forEach(label => {
-                const labelSpan =
-                    document.createElement("span");
-
-                labelSpan.className =
-                    `note-label ${label.toLowerCase()}`;
-
-                labelSpan.textContent = label;
-                labelsDiv.appendChild(labelSpan);
-            });
-
-            card.appendChild(labelsDiv);
-        }
-
-        const content = document.createElement("p");
-        content.textContent = note.text;
-
-        const actions = document.createElement("div");
-        actions.className = "card-actions";
-
-        const editBtn = document.createElement("button");
-        editBtn.textContent = "Edit";
-        editBtn.className = "edit-btn";
-        editBtn.onclick = () => editNote(originalIndex);
-
-        const deleteBtn = document.createElement("button");
-        deleteBtn.textContent = "Delete";
-        deleteBtn.className = "delete-btn";
-        deleteBtn.onclick = () => deleteNote(originalIndex);
-
-        actions.appendChild(editBtn);
-        actions.appendChild(deleteBtn);
-
-        card.appendChild(content);
-        card.appendChild(actions);
-
-        notesGrid.appendChild(card);
+        notesGrid.appendChild(
+            createNoteCard(note, originalIndex)
+        );
     });
 }
 
 function addNote() {
     const text = noteInput.value.trim();
-    if (!text) return;
+
+    if (!text) {
+        return;
+    }
 
     const selectedLabels = getSelectedLabels();
     const selectedFolder = folderSelect.value;
@@ -322,7 +298,7 @@ function addNote() {
 
     notes.push({
         id: Date.now(),
-        text: text,
+        text,
         labels: selectedLabels,
         folder: selectedFolder,
         createdAt: currentDate,
@@ -331,12 +307,13 @@ function addNote() {
 
     noteInput.value = "";
     folderSelect.value = "";
-    searchInput.value = "";
 
-    labelCheckboxes.forEach(cb => cb.checked = false);
+    labelCheckboxes.forEach(checkbox => {
+        checkbox.checked = false;
+    });
 
     saveNotes();
-    renderNotes();
+    renderNotes(searchInput.value);
 }
 
 function deleteNote(index) {
@@ -402,65 +379,14 @@ searchInput.addEventListener("input", () => {
             return;
         }
 
-        filtered.forEach((note, index) => {
-            const originalIndex =
-                notes.findIndex(n => n.id === note.id);
+        filtered.forEach(note => {
+            const originalIndex = notes.findIndex(
+                item => item.id === note.id
+            );
 
-            const card = document.createElement("div");
-            card.className = "note-card";
-
-            if (note.labels && note.labels.length > 0) {
-                card.setAttribute(
-                    "data-labels",
-                    note.labels.join(" ")
-                );
-
-                const labelsDiv =
-                    document.createElement("div");
-
-                labelsDiv.className = "note-labels";
-
-                note.labels.forEach(label => {
-                    const labelSpan =
-                        document.createElement("span");
-
-                    labelSpan.className =
-                        `note-label ${label.toLowerCase()}`;
-
-                    labelSpan.textContent = label;
-                    labelsDiv.appendChild(labelSpan);
-                });
-
-                card.appendChild(labelsDiv);
-            }
-
-            const content = document.createElement("p");
-            content.textContent = note.text;
-
-            const actions = document.createElement("div");
-            actions.className = "card-actions";
-
-            const editBtn = document.createElement("button");
-            editBtn.textContent = "Edit";
-            editBtn.className = "edit-btn";
-            editBtn.onclick = () =>
-                editNote(originalIndex);
-
-            const deleteBtn =
-                document.createElement("button");
-
-            deleteBtn.textContent = "Delete";
-            deleteBtn.className = "delete-btn";
-            deleteBtn.onclick = () =>
-                deleteNote(originalIndex);
-
-            actions.appendChild(editBtn);
-            actions.appendChild(deleteBtn);
-
-            card.appendChild(content);
-            card.appendChild(actions);
-
-            notesGrid.appendChild(card);
+            notesGrid.appendChild(
+                createNoteCard(note, originalIndex)
+            );
         });
     } else {
         renderNotes(searchInput.value);
@@ -474,19 +400,15 @@ function restoreNote(index) {
     saveNotes();
     saveTrash();
 
-    // If we're in trash view, stay in trash view
     if (
         document.getElementById("trashView")
             .style.display === "block"
     ) {
         renderTrash();
+    } else if (currentFilter !== "all") {
+        filterNotesByCategory(currentFilter);
     } else {
-        // Otherwise update notes view based on current filter
-        if (currentFilter !== "all") {
-            filterNotesByCategory(currentFilter);
-        } else {
-            renderNotes(searchInput.value);
-        }
+        renderNotes(searchInput.value);
     }
 }
 
@@ -677,6 +599,7 @@ document.getElementById("navTrash").addEventListener("click", () => {
 // --- Folder Management ---
 function renderFolders() {
     customFoldersList.innerHTML = "";
+
     folderSelect.innerHTML =
         '<option value="">No Folder</option>';
 
@@ -783,7 +706,11 @@ document.addEventListener("keydown", event => {
         event.key.toLowerCase() === "t"
     ) {
         event.preventDefault();
-        document.getElementById("navTrash").click();
+
+        document
+            .getElementById("navTrash")
+            .click();
+
         return;
     }
 
