@@ -1,86 +1,39 @@
+const noteInput = document.getElementById("noteInput");
+const addNoteBtn = document.getElementById("addNoteBtn");
+const notesGrid = document.getElementById("notesGrid");
+const searchInput = document.getElementById("searchInput");
+const trashGrid = document.getElementById("trashGrid");
+const darkModeBtn = document.getElementById("darkModeBtn");
+const labelCheckboxes = document.querySelectorAll(".label-checkbox");
 
-// ==========================================
-// PADRÃO DE PROJETO: SINGLETON (NoteStorage)
-// ==========================================
-class NoteStorage {
-    constructor() {
-        if (!NoteStorage.instancia) {
-            NoteStorage.instancia = this;
-        }
-        return NoteStorage.instancia;
-    }
+// Folder Elements
+const newFolderBtn = document.getElementById("newFolderBtn");
+const newFolderModal = document.getElementById("newFolderModal");
+const closeFolderModal = document.getElementById("closeFolderModal");
+const folderNameInput = document.getElementById("folderNameInput");
+const createFolderBtn = document.getElementById("createFolderBtn");
+const customFoldersList = document.getElementById("customFoldersList");
+const folderSelect = document.getElementById("folderSelect");
 
-    // Busca as notas usando a sua chave definitiva do projeto
-    buscarNotas() {
-        return JSON.parse(localStorage.getItem('ultimateNotes')) || [];
-    }
-
-    // Salva as notas usando a sua chave definitiva do projeto
-    salvarNotas(notes) {
-        localStorage.setItem('ultimateNotes', JSON.stringify(notes));
-    }
-
-    // Busca a lixeira usando a sua chave definitiva do projeto
-    buscarLixeira() {
-        return JSON.parse(localStorage.getItem('ultimateTrash')) || [];
-    }
-
-    // Salva a lixeira usando a sua chave definitiva do projeto
-    salvarLixeira(trash) {
-        localStorage.setItem('ultimateTrash', JSON.stringify(trash));
-    }
-}
-
-// Cria a instância única do Singleton
-const storage = new NoteStorage();
-Object.freeze(storage);
-
-// ==========================================
-// PADRÃO DE PROJETO: FACADE (UIManager)
-// ==========================================
-class UIManager {
-    // Fachada para buscar um elemento do HTML sem precisar digitar o comando longo
-    static obterElemento(id) {
-        return document.getElementById(id);
-    }
-
-    // Fachada para abrir ou fechar modais/telas trocando classes CSS
-    static alternarClasse(id, classe, adicionar = true) {
-        const elemento = this.obterElemento(id);
-        if (elemento) {
-            if (adicionar) elemento.classList.add(classe);
-            else elemento.classList.remove(classe);
-        }
-    }
-}
-
-
-
-// =================================================================
-// APLICAÇÃO DO PADRÃO FACADE (Substituindo a busca direta do DOM)
-// =================================================================
-const noteInput = UIManager.obterElemento("noteInput");
-const addNoteBtn = UIManager.obterElemento("addNoteBtn");
-const notesGrid = UIManager.obterElemento("notesGrid");
-const searchInput = UIManager.obterElemento("searchInput");
-const trashGrid = UIManager.obterElemento("trashGrid");
-const darkModeBtn = UIManager.obterElemento("darkModeBtn");
-const labelCheckboxes = document.querySelectorAll(".label-checkbox"); // QuerySelector se mantém separado
-
-// Folder Elements usando a nossa Fachada (Facade)
-const newFolderBtn = UIManager.obterElemento("newFolderBtn");
-const newFolderModal = UIManager.obterElemento("newFolderModal");
-const closeFolderModal = UIManager.obterElemento("closeFolderModal");
-const folderNameInput = UIManager.obterElemento("folderNameInput");
-const createFolderBtn = UIManager.obterElemento("createFolderBtn");
-const customFoldersList = UIManager.obterElemento("customFoldersList");
-const folderSelect = UIManager.obterElemento("folderSelect");
-
-// AGORA CHAMA O SINGLETON NO INÍCIO:
-let trash = storage.buscarLixeira();
-let notes = storage.buscarNotas();
+let trash = JSON.parse(localStorage.getItem("ultimateTrash")) || [];
+let notes = JSON.parse(localStorage.getItem("ultimateNotes")) || [];
 let folders = JSON.parse(localStorage.getItem("noteFolders")) || [];
 let currentFilter = "all"; // Track current category/folder filter
+
+function sortNotesByModificationDate(notesList) {
+    return [...notesList].sort((noteA, noteB) => {
+        const dateA = new Date(
+            noteA.updatedAt || noteA.createdAt || 0
+        ).getTime();
+
+        const dateB = new Date(
+            noteB.updatedAt || noteB.createdAt || 0
+        ).getTime();
+
+        return dateB - dateA;
+    });
+}
+
 function showEmptyState(container, message) {
     container.innerHTML = `
         <div class="empty-state">
@@ -98,31 +51,33 @@ function showEmptyState(container, message) {
         });
     }
 }
+
 function getSelectedLabels() {
     const selected = [];
+
     labelCheckboxes.forEach(checkbox => {
         if (checkbox.checked) {
             selected.push(checkbox.value);
         }
     });
+
     return selected;
 }
+
 function filterNotesByCategory(category) {
     currentFilter = category;
 
     if (category === "all") {
         renderNotes(searchInput.value);
     } else {
-        // SOLUÇÃO CODE SMELL 2: Substituição da checagem manual antiga com o operador '&&'
-        // pelo operador moderno de ponto de interrogação e ponto (Optional Chaining - ?.).
-        // Isso evita que o código quebre caso 'labels' venha vazio ou nulo, deixando a linha limpa e curta.
-        const filtered = notes.filter(note =>
-            note.labels?.includes(category) || (note.folder === category)
+        const filtered = sortNotesByModificationDate(
+            notes.filter(note =>
+                note.labels?.includes(category) ||
+                note.folder === category
+            )
         );
 
-
         // Create a temporary filtered display
-    
         notesGrid.innerHTML = "";
 
         if (filtered.length === 0) {
@@ -140,7 +95,7 @@ function filterNotesByCategory(category) {
             card.className = "note-card";
 
             if (note.labels && note.labels.length > 0) {
-                card.setAttribute('data-labels', note.labels.join(' '));
+                card.setAttribute("data-labels", note.labels.join(" "));
 
                 const labelsDiv = document.createElement("div");
                 labelsDiv.className = "note-labels";
@@ -182,50 +137,84 @@ function filterNotesByCategory(category) {
     }
 
     // Update active state in sidebar
-    document.querySelectorAll('.sidebar li').forEach(li => {
-        li.classList.remove('active');
+    document.querySelectorAll(".sidebar li").forEach(li => {
+        li.classList.remove("active");
     });
 
     // Check if it's a built-in category or a custom folder
     const builtInNav = document.getElementById(`nav${category}`);
+
     if (builtInNav) {
-        builtInNav.classList.add('active');
+        builtInNav.classList.add("active");
     } else {
-        const customNavs = document.querySelectorAll('.custom-folder-item');
+        const customNavs =
+            document.querySelectorAll(".custom-folder-item");
+
         customNavs.forEach(nav => {
-            if (nav.dataset.folder === category) nav.classList.add('active');
+            if (nav.dataset.folder === category) {
+                nav.classList.add("active");
+            }
         });
     }
 }
+
 function saveNotes() {
-    // PADRÃO SINGLETON: Em vez de acessar o localStorage solto no código,
-    // delegamos a responsabilidade para a nossa instância única do NoteStorage.
-    storage.salvarNotas(notes);
+    localStorage.setItem(
+        "notestackNotes",
+        JSON.stringify(notes)
+    );
 }
 
 // Migrate old notes to new format
 notes = notes.map(note => {
-    if (typeof note === 'string') {
+    const currentDate = new Date().toISOString();
+
+    if (typeof note === "string") {
         return {
             id: Date.now() + Math.random(),
             text: note,
             labels: [],
-            folder: ""
+            folder: "",
+            createdAt: currentDate,
+            updatedAt: currentDate
         };
     }
+
     // Set empty folder if undefined for backward compatibility
-    if (note.folder === undefined) note.folder = "";
+    if (note.folder === undefined) {
+        note.folder = "";
+    }
+
+    if (!note.createdAt) {
+        const noteId = Number(note.id);
+
+        note.createdAt =
+            Number.isFinite(noteId) && noteId > 0
+                ? new Date(noteId).toISOString()
+                : currentDate;
+    }
+
+    if (!note.updatedAt) {
+        note.updatedAt = note.createdAt;
+    }
+
     return note;
 });
+
 saveNotes();
 
 function saveFolders() {
-    localStorage.setItem("noteFolders", JSON.stringify(folders));
+    localStorage.setItem(
+        "noteFolders",
+        JSON.stringify(folders)
+    );
 }
 
 function saveTrash() {
-    // PADRÃO SINGLETON: Delegando o salvamento da lixeira para a instância centralizada.
-    storage.salvarLixeira(trash);
+    localStorage.setItem(
+        "ultimateTrash",
+        JSON.stringify(trash)
+    );
 }
 
 function renderNotes(filter = "") {
@@ -235,22 +224,30 @@ function renderNotes(filter = "") {
         return;
     }
 
-    //code smell 2
     notesGrid.innerHTML = "";
 
-    let filteredNotes = notes;
-    if (filter.startsWith('#')) {
+    let filteredNotes = sortNotesByModificationDate(notes);
+
+    if (filter.startsWith("#")) {
         const labelFilter = filter.substring(1).toLowerCase();
-        filteredNotes = notes.filter(note =>
-            note.labels && note.labels.some(label => label.toLowerCase().includes(labelFilter))
+
+        filteredNotes = filteredNotes.filter(note =>
+            note.labels?.some(label =>
+                label.toLowerCase().includes(labelFilter)
+            )
         );
     } else {
-        filteredNotes = notes.filter(note =>
-            note.text.toLowerCase().includes(filter.toLowerCase())
+        filteredNotes = filteredNotes.filter(note =>
+            note.text
+                .toLowerCase()
+                .includes(filter.toLowerCase())
         );
     }
 
-    if (filteredNotes.length === 0 && filter.trim() !== "") {
+    if (
+        filteredNotes.length === 0 &&
+        filter.trim() !== ""
+    ) {
         showEmptyState(
             notesGrid,
             `No notes found matching "${filter}". Try a different search or add a new note.`
@@ -259,20 +256,29 @@ function renderNotes(filter = "") {
     }
 
     filteredNotes.forEach((note, index) => {
-        const originalIndex = notes.findIndex(n => n.text === note.text && n.id === note.id);
+        const originalIndex = notes.findIndex(
+            n => n.text === note.text && n.id === note.id
+        );
 
         const card = document.createElement("div");
         card.className = "note-card";
 
         if (note.labels && note.labels.length > 0) {
-            card.setAttribute('data-labels', note.labels.join(' '));
+            card.setAttribute(
+                "data-labels",
+                note.labels.join(" ")
+            );
 
             const labelsDiv = document.createElement("div");
             labelsDiv.className = "note-labels";
 
             note.labels.forEach(label => {
-                const labelSpan = document.createElement("span");
-                labelSpan.className = `note-label ${label.toLowerCase()}`;
+                const labelSpan =
+                    document.createElement("span");
+
+                labelSpan.className =
+                    `note-label ${label.toLowerCase()}`;
+
                 labelSpan.textContent = label;
                 labelsDiv.appendChild(labelSpan);
             });
@@ -305,32 +311,39 @@ function renderNotes(filter = "") {
         notesGrid.appendChild(card);
     });
 }
+
 function addNote() {
     const text = noteInput.value.trim();
     if (!text) return;
 
     const selectedLabels = getSelectedLabels();
     const selectedFolder = folderSelect.value;
+    const currentDate = new Date().toISOString();
 
     notes.push({
         id: Date.now(),
         text: text,
         labels: selectedLabels,
-        folder: selectedFolder
+        folder: selectedFolder,
+        createdAt: currentDate,
+        updatedAt: currentDate
     });
 
     noteInput.value = "";
     folderSelect.value = "";
+    searchInput.value = "";
+
     labelCheckboxes.forEach(cb => cb.checked = false);
 
     saveNotes();
-    renderNotes(searchInput.value);
+    renderNotes();
 }
 
 function deleteNote(index) {
     // Store the entire note object, not just the text
     trash.push(notes[index]);
     notes.splice(index, 1);
+
     saveNotes();
     saveTrash();
 
@@ -343,47 +356,77 @@ function deleteNote(index) {
 }
 
 function editNote(index) {
-    const updated = prompt("Edit note:", notes[index].text);
-    if (updated !== null && updated.trim() !== "") {
+    const updated = prompt(
+        "Edit note:",
+        notes[index].text
+    );
+
+    if (
+        updated !== null &&
+        updated.trim() !== ""
+    ) {
         notes[index].text = updated.trim();
+        notes[index].updatedAt =
+            new Date().toISOString();
+
         saveNotes();
         renderNotes(searchInput.value);
     }
 }
 
 addNoteBtn.addEventListener("click", addNote);
+
 searchInput.addEventListener("input", () => {
     if (currentFilter !== "all") {
         // If in category view, search within that category
-        const filtered = notes.filter(note =>
-            note.labels && note.labels.includes(currentFilter) &&
-            note.text.toLowerCase().includes(searchInput.value.toLowerCase())
+        const filtered = sortNotesByModificationDate(
+            notes.filter(note =>
+                note.labels?.includes(currentFilter) &&
+                note.text
+                    .toLowerCase()
+                    .includes(
+                        searchInput.value.toLowerCase()
+                    )
+            )
         );
 
         notesGrid.innerHTML = "";
 
         if (filtered.length === 0) {
-            notesGrid.innerHTML = `<p style="text-align:center; margin-top:20px; color:#777;">
-                No ${currentFilter} notes found matching "${searchInput.value}"
-            </p>`;
+            notesGrid.innerHTML = `
+                <p style="text-align:center; margin-top:20px; color:#777;">
+                    No ${currentFilter} notes found matching
+                    "${searchInput.value}"
+                </p>
+            `;
             return;
         }
 
         filtered.forEach((note, index) => {
-            const originalIndex = notes.findIndex(n => n.id === note.id);
+            const originalIndex =
+                notes.findIndex(n => n.id === note.id);
 
             const card = document.createElement("div");
             card.className = "note-card";
 
             if (note.labels && note.labels.length > 0) {
-                card.setAttribute('data-labels', note.labels.join(' '));
+                card.setAttribute(
+                    "data-labels",
+                    note.labels.join(" ")
+                );
 
-                const labelsDiv = document.createElement("div");
+                const labelsDiv =
+                    document.createElement("div");
+
                 labelsDiv.className = "note-labels";
 
                 note.labels.forEach(label => {
-                    const labelSpan = document.createElement("span");
-                    labelSpan.className = `note-label ${label.toLowerCase()}`;
+                    const labelSpan =
+                        document.createElement("span");
+
+                    labelSpan.className =
+                        `note-label ${label.toLowerCase()}`;
+
                     labelSpan.textContent = label;
                     labelsDiv.appendChild(labelSpan);
                 });
@@ -400,12 +443,16 @@ searchInput.addEventListener("input", () => {
             const editBtn = document.createElement("button");
             editBtn.textContent = "Edit";
             editBtn.className = "edit-btn";
-            editBtn.onclick = () => editNote(originalIndex);
+            editBtn.onclick = () =>
+                editNote(originalIndex);
 
-            const deleteBtn = document.createElement("button");
+            const deleteBtn =
+                document.createElement("button");
+
             deleteBtn.textContent = "Delete";
             deleteBtn.className = "delete-btn";
-            deleteBtn.onclick = () => deleteNote(originalIndex);
+            deleteBtn.onclick = () =>
+                deleteNote(originalIndex);
 
             actions.appendChild(editBtn);
             actions.appendChild(deleteBtn);
@@ -419,35 +466,58 @@ searchInput.addEventListener("input", () => {
         renderNotes(searchInput.value);
     }
 });
+
 function restoreNote(index) {
     notes.push(trash[index]);
     trash.splice(index, 1);
+
     saveNotes();
     saveTrash();
 
-    // SOLUÇÃO CODE SMELL 1: Juntamos o 'else' com o 'if' de baixo.
-    // Isso eliminou chaves desnecessárias, deixando o código em linha reta e mais legível.
-    if (document.getElementById("trashView").style.display === "block") {
+    // If we're in trash view, stay in trash view
+    if (
+        document.getElementById("trashView")
+            .style.display === "block"
+    ) {
         renderTrash();
-    } else if (currentFilter !== "all") {
-        filterNotesByCategory(currentFilter);
     } else {
-        renderNotes(searchInput.value);
+        // Otherwise update notes view based on current filter
+        if (currentFilter !== "all") {
+            filterNotesByCategory(currentFilter);
+        } else {
+            renderNotes(searchInput.value);
+        }
     }
 }
+
 function permanentlyDelete(index) {
-    if (!confirm("Permanently delete this note? This cannot be undone.")) return;
+    if (
+        !confirm(
+            "Permanently delete this note? This cannot be undone."
+        )
+    ) {
+        return;
+    }
+
     trash.splice(index, 1);
+
     saveTrash();
     renderTrash();
 }
 
 function renderTrash() {
-    if (!trashGrid) return;
+    if (!trashGrid) {
+        return;
+    }
+
     trashGrid.innerHTML = "";
 
     if (trash.length === 0) {
-        trashGrid.innerHTML = `<p style="text-align:center; margin-top:20px; color:#777;">Trash is empty</p>`;
+        trashGrid.innerHTML = `
+            <p style="text-align:center; margin-top:20px; color:#777;">
+                Trash is empty
+            </p>
+        `;
         return;
     }
 
@@ -456,17 +526,30 @@ function renderTrash() {
         card.className = "note-card";
 
         // Handle both old string format and new object format
-        const noteText = typeof note === 'string' ? note : note.text;
-        const noteLabels = typeof note === 'object' && note.labels ? note.labels : [];
+        const noteText =
+            typeof note === "string"
+                ? note
+                : note.text;
+
+        const noteLabels =
+            typeof note === "object" && note.labels
+                ? note.labels
+                : [];
 
         // Show labels if they exist
         if (noteLabels.length > 0) {
-            const labelsDiv = document.createElement("div");
+            const labelsDiv =
+                document.createElement("div");
+
             labelsDiv.className = "note-labels";
 
             noteLabels.forEach(label => {
-                const labelSpan = document.createElement("span");
-                labelSpan.className = `note-label ${label.toLowerCase()}`;
+                const labelSpan =
+                    document.createElement("span");
+
+                labelSpan.className =
+                    `note-label ${label.toLowerCase()}`;
+
                 labelSpan.textContent = label;
                 labelsDiv.appendChild(labelSpan);
             });
@@ -480,24 +563,30 @@ function renderTrash() {
         const actions = document.createElement("div");
         actions.className = "card-actions";
 
-        const restoreBtn = document.createElement("button");
+        const restoreBtn =
+            document.createElement("button");
+
         restoreBtn.textContent = "Restore";
         restoreBtn.className = "edit-btn";
         restoreBtn.onclick = () => restoreNote(index);
 
-        const permDeleteBtn = document.createElement("button");
+        const permDeleteBtn =
+            document.createElement("button");
+
         permDeleteBtn.textContent = "Delete Forever";
         permDeleteBtn.className = "delete-btn";
-        permDeleteBtn.onclick = () => permanentlyDelete(index);
+        permDeleteBtn.onclick =
+            () => permanentlyDelete(index);
 
         actions.appendChild(restoreBtn);
         actions.appendChild(permDeleteBtn);
+
         card.appendChild(content);
         card.appendChild(actions);
+
         trashGrid.appendChild(card);
     });
 }
-
 
 if (localStorage.getItem("theme") === "dark") {
     document.body.classList.add("dark-mode");
@@ -506,10 +595,21 @@ if (localStorage.getItem("theme") === "dark") {
 
 darkModeBtn.addEventListener("click", () => {
     document.body.classList.toggle("dark-mode");
-    const isDark = document.body.classList.contains("dark-mode");
-    localStorage.setItem("theme", isDark ? "dark" : "light");
-    darkModeBtn.textContent = isDark ? "☀️ Light Mode" : "🌙 Dark Mode";
+
+    const isDark =
+        document.body.classList.contains("dark-mode");
+
+    localStorage.setItem(
+        "theme",
+        isDark ? "dark" : "light"
+    );
+
+    darkModeBtn.textContent =
+        isDark
+            ? "☀️ Light Mode"
+            : "🌙 Dark Mode";
 });
+
 renderNotes();
 renderTrash();
 
@@ -528,6 +628,7 @@ document.getElementById("navTrash").addEventListener("click", () => {
     document.getElementById("navNotes").classList.remove("active");
     renderTrash();
 });
+
 // Category filter event listeners
 document.getElementById("navImportant").addEventListener("click", () => {
     document.getElementById("notesView").style.display = "block";
@@ -576,25 +677,37 @@ document.getElementById("navTrash").addEventListener("click", () => {
 // --- Folder Management ---
 function renderFolders() {
     customFoldersList.innerHTML = "";
-    folderSelect.innerHTML = '<option value="">No Folder</option>';
+    folderSelect.innerHTML =
+        '<option value="">No Folder</option>';
 
     folders.forEach(folder => {
         // Sidebar list item
         const li = document.createElement("li");
+
         li.className = "custom-folder-item";
         li.dataset.folder = folder;
         li.innerHTML = `📁 ${folder}`;
+
         li.addEventListener("click", () => {
-            document.getElementById("notesView").style.display = "block";
-            document.getElementById("trashView").style.display = "none";
+            document.getElementById(
+                "notesView"
+            ).style.display = "block";
+
+            document.getElementById(
+                "trashView"
+            ).style.display = "none";
+
             filterNotesByCategory(folder);
         });
+
         customFoldersList.appendChild(li);
 
         // Select dropdown option
         const option = document.createElement("option");
+
         option.value = folder;
         option.textContent = folder;
+
         folderSelect.appendChild(option);
     });
 }
@@ -610,7 +723,10 @@ closeFolderModal.addEventListener("click", () => {
 
 createFolderBtn.addEventListener("click", () => {
     const name = folderNameInput.value.trim();
-    if (!name) return;
+
+    if (!name) {
+        return;
+    }
 
     if (folders.includes(name)) {
         alert("A folder with this name already exists.");
@@ -618,57 +734,65 @@ createFolderBtn.addEventListener("click", () => {
     }
 
     folders.push(name);
+
     saveFolders();
     renderFolders();
 
     folderNameInput.value = "";
     newFolderModal.style.display = "none";
 });
+
 /* ===========================
    KEYBOARD SHORTCUTS (SAFE)
 =========================== */
 
-document.addEventListener("keydown", (e) => {
-
+document.addEventListener("keydown", event => {
     // ALT + N → Focus new note
-    if (e.altKey && e.key.toLowerCase() === "n") {
-        e.preventDefault();
+    if (
+        event.altKey &&
+        event.key.toLowerCase() === "n"
+    ) {
+        event.preventDefault();
         noteInput.focus();
         return;
     }
 
     // ALT + S → Focus search
-    if (e.altKey && e.key.toLowerCase() === "s") {
-        e.preventDefault();
+    if (
+        event.altKey &&
+        event.key.toLowerCase() === "s"
+    ) {
+        event.preventDefault();
         searchInput.focus();
         return;
     }
 
     // ALT + D → Toggle dark mode
-    if (e.altKey && e.key.toLowerCase() === "d") {
-        e.preventDefault();
+    if (
+        event.altKey &&
+        event.key.toLowerCase() === "d"
+    ) {
+        event.preventDefault();
         darkModeBtn.click();
         return;
     }
 
     // ALT + T → Open Trash
-    if (e.altKey && e.key.toLowerCase() === "t") {
-        e.preventDefault();
+    if (
+        event.altKey &&
+        event.key.toLowerCase() === "t"
+    ) {
+        event.preventDefault();
         document.getElementById("navTrash").click();
         return;
     }
-// code smell 3
+
     // ESC → Clear search
-    if (e.key === "Escape") {
+    if (event.key === "Escape") {
         searchInput.value = "";
         renderNotes();
-        
-        // SOLUÇÃO CODE SMELL 3: Removido o 'return;' redundante (Redundant Jump).
-        // Como esta condição é o fim do bloco do 'if' e não há código executado depois
-        // dentro desta lógica, a função já encerra naturalmente sem precisar de "código morto".
     }
-
 });
-// Initial Render
 
+// Initial Render
 renderFolders();
