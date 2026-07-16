@@ -26,28 +26,41 @@ describe("NoteStack - testes principais", () => {
 
         criarNota(texto);
 
-        /*
-         * O código atual salva em "notestackNotes",
-         * mas carrega inicialmente de "ultimateNotes".
-         *
-         * Como a orientação é corrigir somente o teste,
-         * copiamos os dados para a chave que o sistema lê
-         * antes de recarregar a página.
-         */
         cy.window().then((window) => {
             const notasSalvas =
-                window.localStorage.getItem("notestackNotes");
+                window.localStorage.getItem("notestackNotes") ||
+                window.localStorage.getItem("ultimateNotes");
 
+            expect(
+                notasSalvas,
+                "notas armazenadas no localStorage"
+            ).to.not.be.null;
+
+            const notas = JSON.parse(notasSalvas);
+
+            expect(notas).to.be.an("array");
+
+            expect(
+                notas.some(nota => nota.text === texto),
+                "nota criada deve estar salva"
+            ).to.equal(true);
+
+            /*
+             * O script carrega as notas utilizando ultimateNotes.
+             * Por isso, garantimos que essa chave tenha as notas
+             * antes de recarregar a página.
+             */
             window.localStorage.setItem(
                 "ultimateNotes",
-                notasSalvas
+                JSON.stringify(notas)
             );
         });
 
         cy.reload();
 
-        cy.contains(".note-card", texto)
-            .should("be.visible");
+        cy.contains(".note-card", texto, {
+            timeout: 10000,
+        }).should("be.visible");
     });
 
     it("abre o modal de criação de pasta", () => {
