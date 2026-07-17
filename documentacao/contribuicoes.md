@@ -1,62 +1,68 @@
-# Contribuições realizadas no NoteStack
+# 🤝 Contribuições Realizadas no NoteStack
 
-## Issue #20 — Ordenação das notas pela data de modificação
+Este documento detalha o escopo de contribuições da dupla para a disciplina de Engenharia de Software, cobrindo as exigências do **Caminho A (Resolução de Issue)** e do **Caminho B (Refatoração de Qualidade)**.
 
-**Issue de referência:** `rspavithra/NOTESTACK#20`
+---
 
-### Problema identificado
+## 🎯 1. Resolução da Issue (Caminho A)
 
-As notas do NoteStack eram exibidas de acordo com a posição em que estavam armazenadas no sistema, sem considerar a data da última modificação.
+* **Issue de referência:** [rspavithra/NOTESTACK#20 - Sort notes by last modified date](https://github.com/rspavithra/NOTESTACK/issues/20)
+* **Pull Request Oficial (Projeto Original):** [rspavithra/NOTESTACK/pull/85](https://github.com/rspavithra/NOTESTACK/pull/85)
 
-Dessa forma, uma nota recentemente editada poderia permanecer abaixo de notas mais antigas, dificultando o acesso aos conteúdos que haviam sido atualizados pelo usuário.
+### 🚨 Problema Identificado
+As notas do NoteStack eram exibidas na tela de acordo com a ordem de inserção direta no armazenamento, ignorando o momento da última modificação. Dessa forma, notas atualizadas recentemente podiam ficar perdidas no fundo da lista, prejudicando a usabilidade geral.
 
-### Solução implementada
+### 🛠️ Solução Implementada
+1. **Atributos de Tempo:** Adicionadas as propriedades `createdAt` (data de criação) e `updatedAt` (data de modificação) na estrutura do objeto de notas dentro do `script.js`.
+2. **Ciclo de Atualização:** A propriedade `updatedAt` é gerada no momento da criação da nota e updated dinamicamente sempre que o conteúdo ou o título da nota sofre alterações.
+3. **Ordenação Cronológica:** Implementada uma função de ordenação descendente (`.sort()`) baseada no timestamp de `updatedAt` para garantir que as notas alteradas por último fiquem sempre no topo.
+4. **Resiliência:** Foi adicionado suporte a notas antigas salvas localmente (retrocompatibilidade), que recebem um fallback de data para não quebrar o layout.
+5. **Consistência Visual:** A ordenação automática foi integrada com sucesso no grid principal, nas categorias, nas pastas personalizadas e na barra de pesquisa de termos.
 
-Foram adicionadas às notas as propriedades `createdAt` e `updatedAt`.
+---
+## 🏗️ 2. Descrição da Refatoração (Caminho B)
 
-A propriedade `createdAt` registra a data e o horário em que a nota foi criada. A propriedade `updatedAt` recebe inicialmente a mesma data de criação e é atualizada sempre que o conteúdo da nota é editado.
+* **Escopo técnico:** Reestruturação arquitetural e eliminação de acoplamentos no arquivo `script.js`
 
-Foi criada uma função responsável por ordenar as notas pela data da última modificação, da mais recente para a mais antiga.
+### 🛡️ Padrões de Projeto Sugeridos
+* **Singleton (`NoteStorage`):** Sugerido para a parte que lida com o `localStorage` (salvar e buscar notas). Ele cria uma classe única na memória para cuidar do banco de dados local em um só lugar. Isso segue o Princípio de Responsabilidade Única (SRP) e evita que o código de salvamento fique espalhado e duplicado pelo arquivo.
 
-A ordenação foi aplicada às seguintes visualizações:
+* **Facade (`UIManager`):** Sugerido para a parte que mexe com o HTML da tela (comandos diretos como `document.getElementById` e `innerHTML`). Ele funciona como uma fachada simples para centralizar e esconder as alterações de layout, isolando as funções de lógica dessas manipulações visuais.
 
-* lista geral de notas;
-* categorias;
-* pastas personalizadas;
-* resultados de pesquisa.
+### 🧹 Correção de Code Smells (Análise Estática do SonarCloud)
+* **Nested If (Linearização):** Correção de desvios condicionais na função `restoreNote`. Juntamos um `if` que estava sozinho e escondido dentro de um bloco `else`, transformando-o em um `else if` direto. Isso eliminou chaves inúteis e deixou o código em linha reta, facilitando a leitura.
+* **Optional Chaining (`?.`):** Simplificação de validações na função `filterNotesByCategory`. Trocamos uma checagem manual dupla e poluída com `&&` pelo operador de ponto de interrogação (`?.`). O código ficou muito mais curto, limpo e protegido contra erros de dados vazios.
+* **Redundant Jump (Remoção de Código Morto):** Correção no evento da tecla "Escape". Removemos a palavra-chave `return;` que estava sobrando no final do bloco. Como ela não realizava nenhuma função prática ali, sua remoção eliminou um pedaço de código inútil.
+* **Padrão Moderno `.dataset`:** Substituição das chamadas genéricas de `setAttribute` para manipulação de atributos iniciados com `data-` nas linhas 98, 270 e 416. Trocamos o formato antigo pelo uso da propriedade limpa `.dataset` do JavaScript moderno.
 
-Também foi implementada compatibilidade com notas antigas que ainda não possuíam as propriedades de data.
+---
 
-### Comportamento após a melhoria
+## 👥 3. Papel de Cada Integrante
 
-Quando uma nota é criada, ela aparece entre as notas mais recentes.
+Para garantir uma divisão clara de responsabilidades, cada membro liderou uma frente específica do projeto:
 
-Quando uma nota antiga é editada, sua data de modificação é atualizada e ela passa a aparecer no início da lista.
+* **Gabriel Soares Avelino:**
+  * Modelagem e documentação da nova arquitetura do NoteStack (`PR1`).
+  * Mapeamento, diagnóstico e correção dos Code Smells apontados pelo SonarCloud (`PR2`).
+  * Sugestão e aplicação dos Padrões de Projeto Singleton e Facade (`PR3`).
 
-### Arquivo alterado
+* **Geovanna:**
+  * Escrita e parametrização dos testes automatizados de aceitação usando Cypress (`PR4`).
+  * Modelagem e automação da pipeline de Integração Contínua (CI) com GitHub Actions (`PR5`).
+  * Desenvolvimento da lógica de carimbo de datas e ordenação dinâmica para fechar a Issue #20 (`PR6`).
 
-* `script.js`
+---
 
-### Validação realizada
+## 🔀 4. Lista de todos os PRs Criados (Histórico Completo)
 
-A melhoria foi validada pelos seguintes procedimentos:
+Aqui está o histórico estruturado de entregas realizadas no fork [soaresavelino/NOTESTACK](https://github.com/soaresavelino/NOTESTACK) e o fechamento do bônus externo:
 
-1. Criação de duas notas em momentos diferentes;
-2. Verificação de que a nota criada mais recentemente aparece primeiro;
-3. Edição da nota mais antiga;
-4. Verificação de que a nota editada passa para o início da lista;
-5. Verificação da ordenação na lista geral;
-6. Verificação da ordenação nas categorias e pastas;
-7. Verificação da ordenação nos resultados de pesquisa;
-8. Execução dos testes automatizados com Cypress.
-
-## Histórico de Pull Requests
-
-| Pull Request | Objetivo                                                           |
-| ------------ | ------------------------------------------------------------------ |
-| PR1          | Desenvolvimento inicial e organização do projeto                   |
-| PR2          | Diagnóstico e correção dos Code Smells                             |
-| PR3          | Implementação dos padrões Singleton e Facade                       |
-| PR4          | Implementação de testes automatizados com Cypress                  |
-| PR5          | Configuração da pipeline de integração contínua com GitHub Actions |
-| PR6          | Ordenação das notas pela data da última modificação                |
+| Pull Request | Autor | Objetivo / Escopo da Entrega | Link de Acesso Direto |
+| :--- | :--- | :--- | :--- |
+| **PR1** | Gabriel | Desenvolvimento inicial, arquitetura e organização do projeto | [Acessar PR1](https://github.com/soaresavelino/NOTESTACK/pull/1) |
+| **PR2** | Gabriel | Identificação de Code Smells, Sugestões de Aplicação de Padrões de Projeto | [Acessar PR2](https://github.com/soaresavelino/NOTESTACK/pull/2) |
+| **PR3** | Gabriel | Refatoração | [Acessar PR3](https://github.com/soaresavelino/NOTESTACK/pull/3) |
+| **PR4** | Geovanna | Implementação dos testes automatizados de aceitação (Cypress) | [Acessar PR4](https://github.com/soaresavelino/NOTESTACK/pull/12) |
+| **PR5** | Geovanna | Configuração da pipeline DevOps (GitHub Actions CI) | [Acessar PR5](https://github.com/soaresavelino/NOTESTACK/pull/15) |
+| **PR6** | Geovanna | Resolução da Issue #20 (Data de modificação e ordenação) | [Acessar PR6](https://github.com/soaresavelino/NOTESTACK/pull/17) |
+| **BÔNUS** | Dupla | **PR Oficial enviado ao repositório original (rspavithra/NOTESTACK)** | [Acessar PR #85](https://github.com/rspavithra/NOTESTACK/pull/85) |
