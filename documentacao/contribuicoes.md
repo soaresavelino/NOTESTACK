@@ -51,7 +51,7 @@ Para garantir uma divisão clara de responsabilidades, cada membro liderou uma f
   * Modelagem e automação da pipeline de Integração Contínua (CI) com GitHub Actions (`PR5`).
   * Desenvolvimento da lógica de carimbo de datas e ordenação dinâmica para fechar a Issue #20 (`PR6`).
 
----
+--- 
 
 ## 🔀 4. Lista de todos os PRs Criados (Histórico Completo)
 
@@ -65,4 +65,5 @@ Aqui está o histórico estruturado de entregas realizadas no fork [soaresavelin
 | **PR4** | Geovanna | Implementação dos testes automatizados de aceitação (Cypress) | [Acessar PR4](https://github.com/soaresavelino/NOTESTACK/pull/12) |
 | **PR5** | Geovanna | Configuração da pipeline DevOps (GitHub Actions CI) | [Acessar PR5](https://github.com/soaresavelino/NOTESTACK/pull/15) |
 | **PR6** | Geovanna | Resolução da Issue #20 (Data de modificação e ordenação) | [Acessar PR6](https://github.com/soaresavelino/NOTESTACK/pull/17) |
+| **PR7** | Dupla | **Relatório final de contribuições e PRs da dupla (Documentações)** | [Acessar PR #18](https://github.com/soaresavelino/NOTESTACK/pull/18) |
 | **BÔNUS** | Dupla | **PR Oficial enviado ao repositório original (rspavithra/NOTESTACK)** | [Acessar PR #85](https://github.com/rspavithra/NOTESTACK/pull/85) |
