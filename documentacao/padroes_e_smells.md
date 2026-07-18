@@ -83,14 +83,12 @@ if (e.key === "Escape") {
 ```
 ## 2. Padrões de Projeto Sugeridos 
 
-Para tirar as funções de banco de dados e os comandos de HTML que estão misturados no meio do arquivo `script.js`, sugerimos a aplicação de dois padrões de projeto simples na próxima etapa:
-
 ### 2.1. Padrão Criacional: Singleton
 * **Onde será sugerido/aplicado:** Na parte do código que mexe com o `localStorage` (salvar e buscar notas).
 * **A sugestão do que deve ser feito:** 1. Criar uma classe única chamada `NoteStorage` com uma checagem no construtor para garantir apenas uma cópia na memória.
   2. Mover o comando `localStorage.setItem` para dentro de um método dessa classe.
   3. Alterar as funções do sistema para que elas salvem os dados chamando esse gerenciador centralizado.
-* **Justificativa simples:** Atualmente, as funções de salvar e ler dados estão espalhadas pelo arquivo. O **Singleton** serve para criar uma classe única responsável por cuidar do banco de dados local. Isso segue o princípio **SRP (Responsabilidade Única)** do SOLID, garantindo que o código de salvar notas fique em um lugar só e não duplicado.
+* **Justificativa simples:** Atualmente, as funções de salvar e ler dados estão espalhadas pelo arquivo de forma acoplada. A criação da classe NoteStorage centraliza e encapsula o acesso à API de persistência de dados do navegador (localStorage) em um único lugar, evitando duplicação de código. O padrão Singleton entra para garantir que exista apenas uma única instância desse gerenciador ativa na memória do aplicativo, impedindo conflitos de leitura e escrita concorrentes nas notas.
 
 ---
 
