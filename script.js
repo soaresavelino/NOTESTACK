@@ -392,6 +392,7 @@ function restoreNote(index) {
     saveTrash();
 
     // CODE SMELL 1 RESOLVIDO: Linearização da estrutura usando else if
+
     if (UIManager.obterElemento("trashView").style.display === "block") {
         renderTrash();
     } else if (currentFilter !== "all") {
@@ -621,3 +622,14 @@ document.addEventListener("keydown", event => {
 
 // Initial Render
 renderFolders();
+
+
+
+
+// Chamada direta espalhada
+localStorage.setItem("notes", JSON.stringify(notes));
+
+
+// Manipulação agressiva e direta da tela
+const container = document.getElementById("noteContainer");
+container.innerHTML = "";
