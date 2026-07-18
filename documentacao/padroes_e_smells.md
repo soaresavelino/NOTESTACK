@@ -58,7 +58,7 @@ const filtered = notes.filter(note =>
 
 
 ### 1.3. Palavra "return" Sobrando no Código (Redundant Jump)
-* **Trecho do código:** `script.js` 
+* **Trecho do código:** `script.js`
 
 ```javascript
 // ESC → Limpar pesquisa
