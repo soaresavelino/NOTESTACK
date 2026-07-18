@@ -9,7 +9,7 @@ Este documento explica os problemas encontrados no nosso código usando o valida
 Estes são os três pontos que deixavam o nosso código desorganizado ou cansativo de ler, mas que já foram corrigidos:
 
 ### 1.1. Código Muito Empurrado para a Direita (Nested If)
-* **Trecho do código:** `script.js` (Perto da linha 362, dentro da função `restoreNote`)
+* **Trecho do código:** `script.js`
 
 ```javascript
 if (document.getElementById("trashView").style.display === "block") {
@@ -38,7 +38,7 @@ if (document.getElementById("trashView").style.display === "block") {
 ```
 
 ### 1.2. Falta do Operador Ponto Interrogação (Optional Chaining)
-* **Trecho do código:** `script.js` (Linha 55, dentro da função `filterNotesByCategory`)
+* **Trecho do código:** `script.js` 
 
 ```javascript
 const filtered = notes.filter(note =>
@@ -58,7 +58,7 @@ const filtered = notes.filter(note =>
 
 
 ### 1.3. Palavra "return" Sobrando no Código (Redundant Jump)
-* **Trecho do código:** `script.js` (Linha 596, dentro do atalho da tecla "Escape")
+* **Trecho do código:** `script.js` 
 
 ```javascript
 // ESC → Limpar pesquisa
